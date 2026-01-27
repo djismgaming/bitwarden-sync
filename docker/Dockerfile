@@ -14,12 +14,13 @@ ENV NODE_OPTIONS="--no-deprecation"
 RUN npm install -g semver && \
     npm install -g @bitwarden/cli@2024.9.0 && \
     mkdir -p /opt/bw-old && \
-    cp -r /usr/local/lib/node_modules/@bitwarden /opt/bw-old/ && \
+    cp -r /usr/local/lib/node_modules/@bitwarden/cli /opt/bw-old/ && \
+    cp -r /usr/local/lib/node_modules /opt/bw-old/node_modules && \
     npm install -g @bitwarden/cli
 
 # Create wrapper scripts for both versions
 RUN echo '#!/bin/sh' > /usr/local/bin/bw-old && \
-    echo 'NODE_PATH=/opt/bw-old/node_modules /opt/bw-old/@bitwarden/cli/build/run.js "$@"' >> /usr/local/bin/bw-old && \
+    echo 'NODE_PATH=/opt/bw-old/node_modules exec node /opt/bw-old/cli/build/bw.js "$@"' >> /usr/local/bin/bw-old && \
     chmod +x /usr/local/bin/bw-old && \
     ln -s $(which bw) /usr/local/bin/bw-new
 
