@@ -52,10 +52,10 @@ bw logout
 echo "# Logging into Source Bitwarden Server... #"
 bw logout  # Ensure we're logged out before config change
 bw config server $BW_SERVER_SOURCE
-export BW_CLIENTID=${BW_CLIENTID_SOURCE}
-export BW_CLIENTSECRET=${BW_CLIENTSECRET_SOURCE}
 bw login --apikey
-BW_SESSION_SOURCE=$(bw unlock --passwordenv BW_PASS_SOURCE --raw)
+
+echo "# Unlocking the vault... #"
+BW_SESSION_SOURCE=$(bw unlock $BW_PASS_SOURCE --raw)
 
 if [ -z "$BW_SESSION_SOURCE" ]; then
   echo "# ERROR: Failed to unlock source vault #"
@@ -102,10 +102,9 @@ bw logout
 echo "# Logging into Destination Bitwarden Server... #"
 bw logout  # Ensure we're logged out before config change
 bw config server $BW_SERVER_DEST
-export BW_CLIENTID=${BW_CLIENTID_DEST}
-export BW_CLIENTSECRET=${BW_CLIENTSECRET_DEST}
 bw login --apikey
-BW_SESSION_DEST=$(bw unlock --passwordenv BW_PASS_DEST --raw)
+
+BW_SESSION_DEST=$(bw unlock $BW_PASS_DEST --raw)
 
 if [ -z "$BW_SESSION_DEST" ]; then
   echo "# ERROR: Failed to unlock destination vault #"

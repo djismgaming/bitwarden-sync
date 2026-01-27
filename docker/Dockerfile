@@ -10,8 +10,8 @@ RUN apk --no-cache add python3 curl bash ca-certificates openssl ncurses coreuti
 # Suppress Node.js deprecation warnings
 ENV NODE_OPTIONS="--no-deprecation"
 
-# Install Bitwarden CLI
-RUN npm install -g semver @bitwarden/cli
+# Install Bitwarden CLI - pin to 2024.9.0 for Vaultwarden compatibility
+RUN npm install -g semver @bitwarden/cli@2024.9.0
 
 # Define cron schedule and script variables
 CMD echo ${BW_TAR_PASS}
