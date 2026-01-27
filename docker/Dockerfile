@@ -13,12 +13,12 @@ ENV NODE_OPTIONS="--no-deprecation"
 # Install two versions of Bitwarden CLI
 # Old version for Vaultwarden compatibility
 RUN npm install -g semver @bitwarden/cli@2024.9.0 && \
-    cp /usr/bin/bw /usr/bin/bw-old
+    cp $(which bw) /usr/local/bin/bw-old
 
 # Latest version for Bitwarden Cloud
 RUN npm install -g @bitwarden/cli && \
-    mv /usr/bin/bw /usr/bin/bw-new && \
-    ln -s /usr/bin/bw-old /usr/bin/bw
+    mv $(which bw) /usr/local/bin/bw-new && \
+    ln -s /usr/local/bin/bw-old /usr/local/bin/bw
 
 # Define cron schedule and script variables
 CMD echo ${BW_TAR_PASS}
