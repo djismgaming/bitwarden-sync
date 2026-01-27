@@ -46,29 +46,25 @@ rm -f -R $SOURCE_EXPORT_OUTPUT_BASE*.json
 
 # Lets make sure we're logged out before we get to work
 echo "# Logging out from Bitwarden... #"
-bw logout 2>/dev/null || true
+bw-old logout 2>/dev/null || true
 
-# Login to our Server
-echo "# Logging into Source Bitwarden Server... #"
-bw logout 2>/dev/null || true
-bw config server $BW_SERVER_SOURCE
-
-# Try API key login - if it fails, we'll still continue
-BW_LOGIN_OUTPUT=$(bw login --apikey 2>&1 || true)
+# Login to our Server (using old CLI for Vaultwarden compatibility)
+echo "# Logging into Source Bitwarden Server (using CLI 2024.9.0)... #"
+bw-old logout 2>/dev/null || true
+bw-old config server $BW_SERVER_SOURCE
+bw-old login --apikey
 
 echo "# Unlocking the vault... #"
-BW_SESSION_SOURCE=$(bw unlock $BW_PASS_SOURCE --raw 2>&1)
+BW_SESSION_SOURCE=$(bw-old unlock $BW_PASS_SOURCE --raw)
 
-# Check if we got a valid session
-if [ -z "$BW_SESSION_SOURCE" ] || echo "$BW_SESSION_SOURCE" | grep -qi "error\|not logged in"; then
+if [ -z "$BW_SESSION_SOURCE" ]; then
   echo "# ERROR: Failed to unlock source vault #"
-  echo "# Error details: $BW_SESSION_SOURCE #"
   exit 1
 fi
 
 # Export out all items
 echo "# Exporting all items... #"
-bw --session $BW_SESSION_SOURCE --raw export --format json > $SOURCE_OUTPUT_FILE_JSON
+bw-old --session $BW_SESSION_SOURCE --raw export --format json > $SOURCE_OUTPUT_FILE_JSON
 
 # Add file to encrypted tar
 file_to_compress="$SOURCE_OUTPUT_FILE_JSON"
@@ -100,47 +96,43 @@ DEST_OUTPUT_FILE=$DEST_EXPORT_OUTPUT_BASE$TIMESTAMP.json
 
 # Logging out before work
 echo "# Logging out from Bitwarden... #"
-bw logout 2>/dev/null || true
+bw-new logout 2>/dev/null || true
 
-# Logging into the destination server
-echo "# Logging into Destination Bitwarden Server... #"
-bw logout 2>/dev/null || true
-bw config server $BW_SERVER_DEST
+# Logging into the destination server (using new CLI for Bitwarden Cloud)
+echo "# Logging into Destination Bitwarden Server (using latest CLI)... #"
+bw-new logout 2>/dev/null || true
+bw-new config server $BW_SERVER_DEST
+bw-new login --apikey
 
-# Try API key login - if it fails, we'll still continue
-BW_LOGIN_OUTPUT=$(bw login --apikey 2>&1 || true)
+BW_SESSION_DEST=$(bw-new unlock $BW_PASS_DEST --raw)
 
-BW_SESSION_DEST=$(bw unlock $BW_PASS_DEST --raw 2>&1)
-
-# Check if we got a valid session
-if [ -z "$BW_SESSION_DEST" ] || echo "$BW_SESSION_DEST" | grep -qi "error\|not logged in"; then
+if [ -z "$BW_SESSION_DEST" ]; then
   echo "# ERROR: Failed to unlock destination vault #"
-  echo "# Error details: $BW_SESSION_DEST #"
   exit 1
 fi
 
 # Export what's currently in the vault, so we can remove it
 echo "# Exporting current items from destination vault... #"
-bw --session $BW_SESSION_DEST --raw export --format json > $DEST_OUTPUT_FILE
+bw-new --session $BW_SESSION_DEST --raw export --format json > $DEST_OUTPUT_FILE
 
 # Find and remove all folders, items, attachments, and org collections
 echo "# Removing items from the destination vault... This might take some time. #"
 
 for id in $(jq '.folders[]? | .id' $DEST_OUTPUT_FILE); do
   id=$(sed 's/"//g' <<< "$id")
-  bw --session $BW_SESSION_DEST --raw delete -p folder $id
+  bw-new --session $BW_SESSION_DEST --raw delete -p folder $id
 done
 
 # Find and remove all items
 for id in $(jq '.items[]? | .id' $DEST_OUTPUT_FILE); do
   id=$(sed 's/"//g' <<< "$id")
-  bw --session $BW_SESSION_DEST --raw delete -p item $id
+  bw-new --session $BW_SESSION_DEST --raw delete -p item $id
 done
 
 # Find and remove all attachments
 for id in $(jq '.attachments[]? | .id' $DEST_OUTPUT_FILE); do
   id=$(sed 's/"//g' <<< "$id")
-  bw --session $BW_SESSION_DEST --raw delete -p attachment $id
+  bw-new --session $BW_SESSION_DEST --raw delete -p attachment $id
 done
 
 echo "# Item removal completed. #"
@@ -164,7 +156,7 @@ DEST_LATEST_BACKUP_JSON=$(find /root/app/backups/bw_export_*.json -type f -exec 
 
 # Import the latest backup
 echo "# Importing the latest backup... #"
-bw --session $BW_SESSION_DEST --raw import bitwardenjson $DEST_LATEST_BACKUP_JSON
+bw-new --session $BW_SESSION_DEST --raw import bitwardenjson $DEST_LATEST_BACKUP_JSON
 
 # Clean up our item list to delete
 rm $DEST_OUTPUT_FILE
@@ -173,7 +165,8 @@ rm -f $DEST_LATEST_BACKUP_JSON
 echo "# End of Restore Process #"
 echo "### Restore - End ###"
 
-bw logout > /dev/null
+bw-old logout > /dev/null 2>&1 || true
+bw-new logout > /dev/null 2>&1 || true
 
 unset BW_CLIENTID
 unset BW_CLIENTSECRET
