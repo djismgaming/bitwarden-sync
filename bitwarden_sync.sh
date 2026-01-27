@@ -54,19 +54,23 @@ rm -f -R $SOURCE_EXPORT_OUTPUT_BASE*.json
 
 # Lets make sure we're logged out before we get to work
 echo "# Logging out from Bitwarden... #"
-bw logout
+bw logout 2>/dev/null || true
 
 # Login to our Server
 echo "# Logging into Source Bitwarden Server... #"
-bw logout  # Ensure we're logged out before config change
+bw logout 2>/dev/null || true
 bw config server $BW_SERVER_SOURCE
-bw login --apikey
+
+# Try API key login - if it fails, we'll still continue
+BW_LOGIN_OUTPUT=$(bw login --apikey 2>&1 || true)
 
 echo "# Unlocking the vault... #"
-BW_SESSION_SOURCE=$(bw unlock $BW_PASS_SOURCE --raw)
+BW_SESSION_SOURCE=$(bw unlock $BW_PASS_SOURCE --raw 2>&1)
 
-if [ -z "$BW_SESSION_SOURCE" ]; then
+# Check if we got a valid session
+if [ -z "$BW_SESSION_SOURCE" ] || echo "$BW_SESSION_SOURCE" | grep -qi "error\|not logged in"; then
   echo "# ERROR: Failed to unlock source vault #"
+  echo "# Error details: $BW_SESSION_SOURCE #"
   exit 1
 fi
 
@@ -104,18 +108,22 @@ DEST_OUTPUT_FILE=$DEST_EXPORT_OUTPUT_BASE$TIMESTAMP.json
 
 # Logging out before work
 echo "# Logging out from Bitwarden... #"
-bw logout
+bw logout 2>/dev/null || true
 
 # Logging into the destination server
 echo "# Logging into Destination Bitwarden Server... #"
-bw logout  # Ensure we're logged out before config change
+bw logout 2>/dev/null || true
 bw config server $BW_SERVER_DEST
-bw login --apikey
 
-BW_SESSION_DEST=$(bw unlock $BW_PASS_DEST --raw)
+# Try API key login - if it fails, we'll still continue
+BW_LOGIN_OUTPUT=$(bw login --apikey 2>&1 || true)
 
-if [ -z "$BW_SESSION_DEST" ]; then
+BW_SESSION_DEST=$(bw unlock $BW_PASS_DEST --raw 2>&1)
+
+# Check if we got a valid session
+if [ -z "$BW_SESSION_DEST" ] || echo "$BW_SESSION_DEST" | grep -qi "error\|not logged in"; then
   echo "# ERROR: Failed to unlock destination vault #"
+  echo "# Error details: $BW_SESSION_DEST #"
   exit 1
 fi
 
