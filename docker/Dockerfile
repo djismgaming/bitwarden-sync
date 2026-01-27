@@ -7,8 +7,11 @@ WORKDIR /app
 # Install required packages
 RUN apk --no-cache add python3 curl bash ca-certificates openssl ncurses coreutils make gcc g++ libgcc linux-headers grep util-linux binutils findutils uuidgen nodejs npm wget unzip tar openssl jq bash
 
+# Suppress Node.js deprecation warnings
+ENV NODE_OPTIONS="--no-deprecation"
+
 # Install Bitwarden CLI
-RUN npm install -g @bitwarden/cli
+RUN npm install -g semver @bitwarden/cli
 
 # Define cron schedule and script variables
 CMD echo ${BW_TAR_PASS}
