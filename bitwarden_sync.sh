@@ -58,12 +58,14 @@ bw logout
 
 # Login to our Server
 echo "# Logging into Source Bitwarden Server... #"
+bw logout  # Ensure we're logged out before config change
 bw config server $BW_SERVER_SOURCE
-bw login $BW_ACCOUNT_SOURCE --apikey --raw
+BW_SESSION_SOURCE=$(echo $BW_PASS_SOURCE | bw login $BW_ACCOUNT_SOURCE --apikey --passwordenv BW_PASS_SOURCE --raw)
 
-# Because we're using an API Key, we need to unlock the vault to get a session ID
-echo "# Unlocking the vault... #"
-BW_SESSION_SOURCE=$(bw unlock $BW_PASS_SOURCE --raw)
+if [ -z "$BW_SESSION_SOURCE" ]; then
+  echo "# ERROR: Failed to login to source server #"
+  exit 1
+fi
 
 # Export out all items
 echo "# Exporting all items... #"
@@ -103,9 +105,14 @@ bw logout
 
 # Logging into the destination server
 echo "# Logging into Destination Bitwarden Server... #"
+bw logout  # Ensure we're logged out before config change
 bw config server $BW_SERVER_DEST
-bw login $BW_ACCOUNT_DEST --apikey --raw
-BW_SESSION_DEST=$(bw unlock $BW_PASS_DEST --raw)
+BW_SESSION_DEST=$(echo $BW_PASS_DEST | bw login $BW_ACCOUNT_DEST --apikey --passwordenv BW_PASS_DEST --raw)
+
+if [ -z "$BW_SESSION_DEST" ]; then
+  echo "# ERROR: Failed to login to destination server #"
+  exit 1
+fi
 
 # Export what's currently in the vault, so we can remove it
 echo "# Exporting current items from destination vault... #"
