@@ -45,8 +45,8 @@ jobs:
             # :latest (and the exact version) so the released image gets patches.
             if [ "$EVENT" = "schedule" ] && rel=$(git describe --tags --exact-match 2>/dev/null); then
               ver=${rel#v}
-              echo "martadams89/bitwarden-sync:latest"
-              echo "martadams89/bitwarden-sync:${ver}"
+              echo "djismgaming/bitwarden-sync:latest"
+              echo "djismgaming/bitwarden-sync:${ver}"
               echo "ghcr.io/${GHCR_OWNER}/bitwarden-sync:latest"
               echo "ghcr.io/${GHCR_OWNER}/bitwarden-sync:${ver}"
             fi
